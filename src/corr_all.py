@@ -18,7 +18,7 @@ Merge station-pair cross-correlation HDF5 for each year into one file
 """
 
 
-def main(corr_h5, freqmin, freqmax, hours=24, minutes=0, step=0, max_STD=50, stack_method='pws'):
+def main(corr_h5, freqmin, freqmax, hours=24, minutes=0, max_STD=50, stack_method='pws'):
     """
 
     Adds yearly station pair HDF5 file to station pair hdf5 for all years.
@@ -75,8 +75,8 @@ def main(corr_h5, freqmin, freqmax, hours=24, minutes=0, step=0, max_STD=50, sta
                     s = starttime[np.argmin(starttime)]
                     e = endtime[np.argmax(endtime)]
                     intervals = np.vstack([
-                        pd.date_range(s,e - datetime.timedelta(hours=hours,minutes=minutes),freq='{}h{}min'.format(0,step)),
-                        pd.date_range(s+datetime.timedelta(hours=hours,minutes=minutes),e,freq='{}h{}min'.format(0,step))]).T
+                        pd.date_range(s,e - datetime.timedelta(hours=hours,minutes=minutes),freq='{}h{}min'.format(hours,minutes)),
+                        pd.date_range(s+datetime.timedelta(hours=hours,minutes=minutes),e,freq='{}h{}min'.format(hours,minutes))]).T
                     starttime, endtime = starttime[best], endtime[best]
 
                     # filter correlations and subset by time
@@ -88,7 +88,7 @@ def main(corr_h5, freqmin, freqmax, hours=24, minutes=0, step=0, max_STD=50, sta
 
                         # stack over intervals
                         for ii,interval in enumerate(intervals):
-                            ind = np.where((starttime >= interval[0]) & (endtime <= interval[1]))[0]
+                            ind = np.where((starttime >= interval[0]) & (starttime < interval[0] + pd.Timedelta(hours=hours,minutes=minutes)))[0]
                             if len(ind) > 0:
                                 keep.append(ii)
 
