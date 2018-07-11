@@ -18,7 +18,6 @@ from scipy.fftpack import fft,ifft,next_fast_len
 import scipy.signal 
 from scipy.signal import hilbert
 from scipy.ndimage import map_coordinates
-from matplotlib import pyplot as plt
 
 import obspy 
 from obspy.signal.filter import bandpass
@@ -757,6 +756,7 @@ def vcorrcoef(X,y):
 
 
 def spect(tr,fmin = 0.1,fmax = None,wlen=10,title=None):
+    import matplotlib as plt
 	if fmax is None:
 		fmax = tr.stats.sampling_rate/2
 	fig = plt.figure()
