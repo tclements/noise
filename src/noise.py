@@ -756,8 +756,34 @@ def vcorrcoef(X,y):
     return cc
 
 
-def gauss_function(x, a, x0, sigma):
-    return a*np.exp(-(x-x0)**2/(2*sigma**2))
+def spect(tr,fmin = 0.1,fmax = None,wlen=10,title=None):
+	if fmax is None:
+		fmax = tr.stats.sampling_rate/2
+	fig = plt.figure()
+	ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2]) #[left bottom width height]
+	ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60], sharex=ax1)
+	ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
+
+	#make time vector
+	t = np.arange(tr.stats.npts) / tr.stats.sampling_rate
+
+	#plot waveform (top subfigure)    
+	ax1.plot(t, tr.data, 'k')
+
+	#plot spectrogram (bottom subfigure)
+	tr2 = tr.copy()
+	fig = tr2.spectrogram(per_lap=0.9,wlen=wlen,show=False, axes=ax2)
+	mappable = ax2.images[0]
+	plt.colorbar(mappable=mappable, cax=ax3)
+	ax2.set_ylim(fmin, fmax)
+	ax2.set_xlabel('Time [s]')
+	ax2.set_ylabel('Frequency [Hz]')
+	if title:
+		plt.suptitle(title)
+	else:
+		plt.suptitle('{}.{}.{} {}'.format(tr.stats.network,tr.stats.station,
+		          tr.stats.channel,tr.stats.starttime))
+	plt.show()
 
 
 if __name__ == "__main__":
