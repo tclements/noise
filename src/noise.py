@@ -17,8 +17,8 @@ import numpy as np
 from scipy.fftpack import fft,ifft,next_fast_len
 import scipy.signal 
 from scipy.signal import hilbert
-from scipy.optimize import curve_fit
 from scipy.ndimage import map_coordinates
+from matplotlib import pyplot as plt
 
 import obspy 
 from obspy.signal.filter import bandpass
