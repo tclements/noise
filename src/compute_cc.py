@@ -448,10 +448,10 @@ def correlate(fft1,fft2, maxlag, Nfft=None, method='cross_correlation'):
         corr /= noise.smooth(np.abs(fft1),half_win=5)
         corr /= noise.smooth(np.abs(fft2),half_win=5)
     corr = np.real(scipy.fftpack.ifft(corr, Nfft,axis=axis)) / Nt
-    corr = np.concatenate((corr[:,-Nt + 1:], corr[:,:Nt + 1]),axis=axis)
+    corr = np.concatenate((corr[:,-Nt//2 + 1:], corr[:,:Nt//2 + 1]),axis=axis)
 
     if maxlag != Nt:
-        tcorr = np.arange(-Nt + 1, Nt)
+        tcorr = np.arange(-Nt//2 + 1, Nt//2)
         dN = np.where(np.abs(tcorr) <= maxlag)[0]
         corr = corr[:,dN]
 
