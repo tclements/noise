@@ -46,6 +46,7 @@ def snr(data,sampling_rate):
     sigma = smooth(sigma,half_win=int(sampling_rate*5))
     s = smooth(s,half_win=int(sampling_rate*5))
 
+
     return np.real(s/sigma)
 
 
@@ -64,7 +65,7 @@ def smooth(x, window='boxcar', half_win=3):
         y = np.convolve(w/w.sum(), s, mode='valid')
         y = y[half_win:len(y)-half_win]
     elif x.ndim == 2:
-        y = np.zeros(x.shape)
+        y = np.zeros(x.shape,x.dtype)
         for ii,row in enumerate(x):
             s = np.r_[row[window_len-1:0:-1], row, row[-1:-window_len:-1]]
             tmp = np.convolve(w/w.sum(), s, mode='valid')
