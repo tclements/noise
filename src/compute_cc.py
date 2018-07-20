@@ -27,26 +27,18 @@ Saves cross-correlation into an HDF5 file.
 
 """
 
-def main(seed1,seed2,CORR,component,maxlag,downsamp_freq,min_dist,max_dist,
-         freqmin,freqmax,XML,step=1800,cc_len =3600, method='cross_correlation',norm_type='running_mean'):
+def main(source,receiver,maxlag,downsamp_freq,
+         freqmin,freqmax,XML,step=1800,cc_len=3600, method='cross_correlation',norm_type='running_mean'):
 
     """
-    Cross-correlates noise data from ASDFDataSet data set.
+    Cross-correlates noise data from obspy stream.
 
-    Loads ambient noise data from ASDF data set {data_set}. Cross-correlates 
-    data using MSnoise myCorr correlation routine. Saves cross-correlations 
+    Cross-correlates data using either cross-correlation, deconvolution or 
+    cross-coherence. Saves cross-correlations 
     in ASDF data set {corr_h5}. Uses parameters channel,maxlag,downsamp_freq,
     min_dist,max_dist, max_std, starttime and endtime to filter input data.
 
-    :type data_set: str 
-    :parama data_set: path/filename (/Volumes/.../../~.h5) of noise ASDF data
-    :type corr_h5: str 
-    :param corr_h5: path/filename (/Volumes/.../../~.h5) to save cross-correlations 
-                    as ASDF data set. Must end in .h5
-    :type component: str
-    :param component: Specifies which channels to cross-correlate:
-                      'all' for ZZ ZR ZT RZ RR RT TZ TR TT, 
-                      'ZZ' for just ZZ,
+
     :type maxlag: int
     :param maxlag: maximum lag, in seconds, in cross-correlation
     :type downsamp_freq: float
@@ -60,23 +52,12 @@ def main(seed1,seed2,CORR,component,maxlag,downsamp_freq,min_dist,max_dist,
     :param freqmin: minimun frequency for whitening 
     :type freqmax: float
     :param freqmax: maximum frequency for whitening 
-    :type stats: list
-    :param stats: list of station names to cross correlate (optional)
-                  e.g. stats = ['CHN', 'CRP', 'LGB', 'PSR', 'RIO', 'RUS', 'WLT'] 
     :type step: float
     :param step: time, in seconds, between success cross-correlation windows
     :type step: float
     :param step: length of noise data window, in seconds, to cross-correlate              
 
     """
-
-    source = obspy.Stream()
-    receiver = obspy.Stream()
-
-    for mseed in seed1:
-        source += obspy.read(mseed, format="MSEED")
-    for mseed in seed2:
-        receiver += obspy.read(mseed, format="MSEED")
 
     source = process_raw(source, downsamp_freq)
     receiver = process_raw(receiver, downsamp_freq)
@@ -146,27 +127,15 @@ def main(seed1,seed2,CORR,component,maxlag,downsamp_freq,min_dist,max_dist,
     receiver_white, receiver_params = process_cc(receiver_slice, freqmin, freqmax, time_norm=True, norm_type=norm_type)          
 
     # cross-correlate using either cross-correlation, deconvolution, or cross-coherence 
-    # if len(data.shape) != 3:
-    #   raise ValueError('Whitened data has shape',len(data.shape))
-    corr = correlate(source_white, receiver_white, maxlag * downsamp_freq, method=method)
-    # try:
-    #     corr = noise.remove_resp(corr, source_stats, inv1)
-    # except Exception as e:
-    #     print(str(e))
-    # try:
-    #     corr = noise.remove_resp(corr, receiver_stats, inv2)
-    # except Exception as e: 
-    #     print(str(e))   
+    corr = correlate(source_white, receiver_white, maxlag * downsamp_freq, method=method) 
     source_slice, receiver_slice = None, None
 
     # stack cross-correlations
     if not np.any(corr):  # nothing cross-correlated
         raise ValueError('No data cross-correlated')
-
-    t_day = np.array([t.toordinal() for t in t_start])
     t_cc = np.vstack([t_start, t_end]).T
 
-    return corr, t_day, t_cc, source_stats, receiver_stats, source_params, receiver_params
+    return corr, t_cc, source_stats, receiver_stats, source_params, receiver_params
 
 
 def cross_corr_parameters(source, receiver, start_end_t, source_params,
@@ -578,6 +547,36 @@ def filter_dist(pairs,locs,min_dist,max_dist):
             new_pairs.append(pair)
 
     return new_pairs
+
+
+def station_list(station):
+    """
+
+    Create dataframe with start & end times, chan for each station.
+    """
+    files = glob.glob(os.path.join(station,'*/*'))
+    clse = [os.path.basename(a).strip('.mseed') for a in files]
+    clse_split = [c.split('.') for c in clse]
+    df = pd.DataFrame(clse_split,columns=['CHAN','LOC','START','END'])
+    df = df.drop(columns='LOC')
+    df['FILES'] = files
+    df['START'] = pd.to_datetime(df['START'].apply(lambda x: x.split('T')[0]))
+    df['END'] = pd.to_datetime(df['END'].apply(lambda x: x.split('T')[0]))
+    df = df.set_index('START')
+    return df
+
+def xyz_to_zne(st):
+    """
+
+    Convert channels in obspy stream from XYZ to ZNE.
+    """
+    for tr in st:
+        chan = tr.stats.channel
+        if chan[-1] == 'X':
+            tr.stats.channel = chan[:-1] + 'E'
+        elif chan[-1] == 'Y':
+            tr.stats.channel = chan[:-1] + 'N'
+    return st
 
 
 if __name__ == "__main__":
