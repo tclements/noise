@@ -56,9 +56,9 @@ def smooth(x, window='boxcar', half_win=3):
     # extending the data at beginning and at the end
     # to apply the window at the borders
     if window == "boxcar":
-        w = scipy.signal.boxcar(window_len).astype('complex')
+        w = scipy.signal.boxcar(window_len).astype(x.dtype)
     else:
-        w = scipy.signal.hanning(window_len).astype('complex')
+        w = scipy.signal.hanning(window_len).astype(x.dtype)
 
     if x.ndim ==1:
         s = np.r_[x[window_len-1:0:-1], x, x[-1:-window_len:-1]]
