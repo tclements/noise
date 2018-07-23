@@ -1,8 +1,5 @@
-import time 
 import os
-import sys
 import glob
-import calendar
 import itertools
 from datetime import datetime
 
@@ -14,7 +11,6 @@ import pyasdf
 import pandas as pd
 from obspy import read_inventory
 from obspy.signal.invsim import cosine_taper
-# from msnoise.move2obspy import whiten,myCorr
 
 import noise
 from mpi4py import MPI
