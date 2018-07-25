@@ -69,45 +69,50 @@ def main(corr_h5, freqmin, freqmax, hours=24, minutes=0, max_STD=50, stack_metho
 
                     # subset by time 
                     starttime = params['starttime']
-                    starttime = pd.to_datetime([datetime.datetime.utcfromtimestamp(s) for s in starttime])
+                    starttime = np.array(pd.to_datetime([datetime.datetime.utcfromtimestamp(s) for s in starttime]))
                     endtime = params['endtime']
-                    endtime = pd.to_datetime([datetime.datetime.utcfromtimestamp(s) for s in endtime])
-                    s = starttime[np.argmin(starttime)]
-                    e = endtime[np.argmax(endtime)]
-                    intervals = np.vstack([
-                        pd.date_range(s,e - datetime.timedelta(hours=hours,minutes=minutes),freq='{}h{}min'.format(hours,minutes)),
-                        pd.date_range(s+datetime.timedelta(hours=hours,minutes=minutes),e,freq='{}h{}min'.format(hours,minutes))]).T
+                    endtime = np.array(pd.to_datetime([datetime.datetime.utcfromtimestamp(s) for s in endtime]))
+                    # s = starttime[np.argmin(starttime)]
+                    # e = endtime[np.argmax(endtime)]
+                    # intervals = np.vstack([
+                    #     pd.date_range(s,e - datetime.timedelta(hours=hours,minutes=minutes),freq='{}h{}min'.format(hours,minutes)),
+                    #     pd.date_range(s+datetime.timedelta(hours=hours,minutes=minutes),e,freq='{}h{}min'.format(hours,minutes))]).T
                     starttime, endtime = starttime[best], endtime[best]
 
                     # filter correlations and subset by time
                     try:
                         corrs = clean_up(ccf, sampling_rate, freqmin, freqmax)
                         # corrs = (corrs.T / np.abs(corrs.max(axis=1))).T
-                        data = []
-                        keep = []
+                        # data = []
+                        # keep = []
 
                         # stack over intervals
-                        for ii,interval in enumerate(intervals):
-                            ind = np.where((starttime >= interval[0]) & (starttime < interval[0] + pd.Timedelta(hours=hours,minutes=minutes)))[0]
-                            if len(ind) > 0:
-                                keep.append(ii)
+                        # for ii,interval in enumerate(corrs):
+                        #     ind = np.where((starttime >= interval[0]) & (starttime < interval[0] + pd.Timedelta(hours=hours,minutes=minutes)))[0]
+                        #     if len(ind) > 0:
+                        #         keep.append(ii)
 
-                                # stack correlations
-                                if stack_method == 'pws':
-                                    interval_stack = pws(corrs[ind,:],sampling_rate=sampling_rate,pws_timegate=0.1)
-                                else:
-                                    interval_stack = np.mean(corrs[ind, :], axis=0)
+                        #         # stack correlations
+                        #         if stack_method == 'pws':
+                        #             interval_stack = pws(corrs[ind,:],sampling_rate=sampling_rate,pws_timegate=0.1)
+                        #         else:
+                        #             interval_stack = np.mean(corrs[ind, :], axis=0)
 
-                                data.append(interval_stack)
-                        keep = np.hstack(keep) 
-                        data = np.array(data)
-                        intervals = intervals[keep, :]
-                        params['hours_start'] = intervals[:, 0].astype('datetime64[s]').astype('int')
-                        params['hours_end'] = intervals[:, 1].astype('datetime64[s]').astype('int')
+                        #         data.append(interval_stack)
+                        # keep = np.hstack(keep) 
+                        # data = np.array(data)
+                        # intervals = intervals[keep, :]
+                        # params['hours_start'] = intervals[:, 0].astype('datetime64[s]').astype('int')
+                        # params['hours_end'] = intervals[:, 1].astype('datetime64[s]').astype('int')
+                        # params['hours'] = hours
+                        # params['minutes'] = minutes
+                        # intervals = intervals[keep, :]
+                        params['hours_start'] = starttime.astype('datetime64[s]').astype('int')
+                        params['hours_end'] = endtime.astype('datetime64[s]').astype('int')
                         params['hours'] = hours
                         params['minutes'] = minutes
                         path = os.path.join(net_sta, comp, corr)
-                        all_ds.add_auxiliary_data(data=data,
+                        all_ds.add_auxiliary_data(data=corrs,
                                                 data_type=data_type,
                                                 path=path,
                                                 parameters=params)

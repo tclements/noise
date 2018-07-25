@@ -24,7 +24,7 @@ Saves cross-correlation into an HDF5 file.
 """
 
 def main(source,receiver,maxlag,downsamp_freq,
-         freqmin,freqmax,XML,step=1800,cc_len=3600, method='cross_correlation',norm_type='running_mean'):
+         freqmin,freqmax,XML,step=1800,cc_len=3600, method='cross_correlation',time_norm='running_mean'):
 
     """
     Cross-correlates noise data from obspy stream.
@@ -119,8 +119,8 @@ def main(source,receiver,maxlag,downsamp_freq,
             receiver_slice.remove(receiver_slice[ii])
 
     # apply one-bit normalization and whitening 
-    source_white, source_params = process_cc(source_slice, freqmin, freqmax, time_norm=True, norm_type=norm_type)    
-    receiver_white, receiver_params = process_cc(receiver_slice, freqmin, freqmax, time_norm=True, norm_type=norm_type)          
+    source_white, source_params = process_cc(source_slice, freqmin, freqmax, time_norm=time_norm)    
+    receiver_white, receiver_params = process_cc(receiver_slice, freqmin, freqmax, time_norm=time_norm)          
 
     # cross-correlate using either cross-correlation, deconvolution, or cross-coherence 
     corr = correlate(source_white, receiver_white, maxlag * downsamp_freq, method=method) 
@@ -282,7 +282,7 @@ def clean_up(corr,sampling_rate,freqmin,freqmax):
     corr = bandpass(corr,freqmin,freqmax,sampling_rate,zerophase=True)
     return corr
 
-def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm=True,norm_type='running_mean',Nfft=None):
+def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='running_mean',Nfft=None):
     """
 
     Pre-process for cross-correlation. 
@@ -319,6 +319,11 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm=True,no
     data = np.zeros([N,Nt])
     for ii,trace in enumerate(stream):
         data[ii,0:npts[ii]] = trace.data
+
+    if time_norm == 'running_mean':
+        data = noise.running_abs_mean(data,int(1 / freqmin / 2))
+    elif time_norm == 'one_bit':
+        data = np.sign(data)
     
     if data.ndim == 1:
         axis = 0
@@ -326,19 +331,6 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm=True,no
         axis = 1
 
     FFTWhite = whiten(data,trace.stats.delta,freqmin,freqmax)
-
-    if time_norm:
-        if Nfft is None:
-            Nfft = next_fast_len(int(FFTWhite.shape[axis]))
-        white = np.real(scipy.fftpack.ifft(FFTWhite, Nfft,axis=axis)) / Nt
-        Nt = FFTWhite.shape[axis]
-        white = np.concatenate((white[:,-(Nt // 2) + 1:], white[:,:(Nt // 2) + 1]),axis=axis)
-        if norm_type == 'one_bit': 
-            white = np.sign(white)
-        elif norm_type == 'running_mean':
-            white = noise.running_abs_mean(white,int(1 / freqmin / 2))
-        FFTWhite = scipy.fftpack.fft(white, Nfft,axis=axis)
-        FFTWhite[:,-(Nfft // 2) + 1:] = FFTWhite[:,1:(Nfft // 2)].conjugate()[::-1]
 
     return FFTWhite,np.vstack([trace_mad,trace_std,nonzero]).T
 
