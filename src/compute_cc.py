@@ -404,13 +404,20 @@ def correlate(fft1,fft2, maxlag, Nfft=None, method='cross_correlation'):
     elif method == 'coherence':
         corr /= noise.smooth(np.abs(fft1),half_win=5)
         corr /= noise.smooth(np.abs(fft2),half_win=5)
-    corr = np.real(scipy.fftpack.ifft(corr, Nfft,axis=axis)) / Nt
-    corr = np.concatenate((corr[:,-Nt//2 + 1:], corr[:,:Nt//2 + 1]),axis=axis)
 
-    if maxlag != Nt:
-        tcorr = np.arange(-Nt//2 + 1, Nt//2)
-        dN = np.where(np.abs(tcorr) <= maxlag)[0]
-        corr = corr[:,dN]
+    corr = np.real(scipy.fftpack.ifft(corr, Nfft,axis=axis)) / Nt
+    if axis == 1:
+        corr = np.concatenate((corr[:,-Nt//2 + 1:], corr[:,:Nt//2 + 1]),axis=axis)
+    else:
+        corr = np.concatenate((corr[-Nt//2 + 1:], corr[:Nt//2 + 1]),axis=axis)
+
+ 
+    tcorr = np.arange(-Nt//2 + 1, Nt//2)
+    ind = np.where(np.abs(tcorr) <= maxlag)[0]
+    if axis == 1:
+        corr = corr[:,ind]
+    else:
+        corr = corr[ind]
 
     return corr
 
