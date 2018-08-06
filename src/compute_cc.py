@@ -324,11 +324,6 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bi
     data = np.zeros([N,Nt])
     for ii,trace in enumerate(stream):
         data[ii,0:npts[ii]] = trace.data
-
-    # if time_norm == 'running_mean':
-    #     data = noise.running_abs_mean(data,int(1 / freqmin / 2))
-    # elif time_norm == 'one_bit':
-    #     data = np.sign(data)
     
     if data.ndim == 1:
         axis = 0
