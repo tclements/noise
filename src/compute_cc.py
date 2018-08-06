@@ -282,7 +282,7 @@ def clean_up(corr,sampling_rate,freqmin,freqmax):
     corr = bandpass(corr,freqmin,freqmax,sampling_rate,zerophase=True)
     return corr
 
-def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='running_mean',Nfft=None):
+def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bit',Nfft=None):
     """
 
     Pre-process for cross-correlation. 
@@ -290,6 +290,11 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='runnin
     Checks ambient noise for earthquakesa and data gaps. 
     Performs one-bit normalization and spectral whitening.
     """
+    if time_norm in ['running_mean','one_bit']:
+        normalize = True 
+    else: 
+        normalize = False
+
     N = len(stream)
     trace_mad = np.zeros(N)
     trace_std = np.zeros(N)
@@ -320,10 +325,10 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='runnin
     for ii,trace in enumerate(stream):
         data[ii,0:npts[ii]] = trace.data
 
-    if time_norm == 'running_mean':
-        data = noise.running_abs_mean(data,int(1 / freqmin / 2))
-    elif time_norm == 'one_bit':
-        data = np.sign(data)
+    # if time_norm == 'running_mean':
+    #     data = noise.running_abs_mean(data,int(1 / freqmin / 2))
+    # elif time_norm == 'one_bit':
+    #     data = np.sign(data)
     
     if data.ndim == 1:
         axis = 0
@@ -331,6 +336,18 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='runnin
         axis = 1
 
     FFTWhite = whiten(data,trace.stats.delta,freqmin,freqmax)
+
+    if normalize:
+
+        white = np.real(scipy.fftpack.ifft(FFTWhite, Nfft,axis=axis)) / Nt
+        Nt = FFTWhite.shape[axis]
+        white = np.concatenate((white[:,-(Nt // 2) + 1:], white[:,:(Nt // 2) + 1]),axis=axis)
+        if norm_type == 'one_bit': 
+            white = np.sign(white)
+        elif norm_type == 'running_mean':
+            white = noise.running_abs_mean(white,int(1 / freqmin / 2))
+        FFTWhite = scipy.fftpack.fft(white, Nfft,axis=axis)
+        FFTWhite[:,-(Nfft // 2) + 1:] = FFTWhite[:,1:(Nfft // 2)].conjugate()[::-1]
 
     return FFTWhite,np.vstack([trace_mad,trace_std,nonzero]).T
 
