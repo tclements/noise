@@ -337,9 +337,9 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bi
         white = np.real(scipy.fftpack.ifft(FFTWhite, Nfft,axis=axis)) / Nt
         Nt = FFTWhite.shape[axis]
         white = np.concatenate((white[:,-(Nt // 2) + 1:], white[:,:(Nt // 2) + 1]),axis=axis)
-        if norm_type == 'one_bit': 
+        if time_norm == 'one_bit': 
             white = np.sign(white)
-        elif norm_type == 'running_mean':
+        elif time_norm == 'running_mean':
             white = noise.running_abs_mean(white,int(1 / freqmin / 2))
         FFTWhite = scipy.fftpack.fft(white, Nfft,axis=axis)
         FFTWhite[:,-(Nfft // 2) + 1:] = FFTWhite[:,1:(Nfft // 2)].conjugate()[::-1]
