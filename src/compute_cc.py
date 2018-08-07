@@ -282,7 +282,7 @@ def clean_up(corr,sampling_rate,freqmin,freqmax):
     corr = bandpass(corr,freqmin,freqmax,sampling_rate,zerophase=True)
     return corr
 
-def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bit',Nfft=None):
+def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bit'):
     """
 
     Pre-process for cross-correlation. 
@@ -333,7 +333,7 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bi
     FFTWhite = whiten(data,trace.stats.delta,freqmin,freqmax)
 
     if normalize:
-
+        Nfft = next_fast_len(int(FFTWhite.shape[axis]))
         white = np.real(scipy.fftpack.ifft(FFTWhite, Nfft,axis=axis)) / Nt
         Nt = FFTWhite.shape[axis]
         white = np.concatenate((white[:,-(Nt // 2) + 1:], white[:,:(Nt // 2) + 1]),axis=axis)
