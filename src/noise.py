@@ -171,6 +171,76 @@ def pws(arr,power=2.,sampling_rate=20.,pws_timegate = 5.):
     weighted = np.multiply(arr,phase_stack)
     return np.mean(weighted,axis=0)/N
 
+def dtw(x,r, g=1.05):
+    """ Dynamic Time Warping Algorithm
+
+    Inputs:
+    x:     target vector
+    r:     vector to be warped
+
+    Outputs:
+    D: Distance matrix
+    Dist:  unnormalized distance between t and r
+    w:     warping path
+    
+    originally written in MATLAB by Peter Huybers 
+    """
+
+    x = norm(x)
+    r = norm(r)
+
+    N = len(x)
+    M = len(r)
+
+    d = (np.tile(x,(M,1)).T - np.tile(r,(N,1)))**2
+    d[0,:] *= 0.25
+    d[:,-1] *= 0.25
+
+    D=np.zeros(d.shape)
+    D[0,0] = d[0,0]
+
+    for ii in range(1,N):
+        D[ii,0] = d[ii,0] + D[ii - 1,0]     
+
+    for ii in range(1,M):
+        D[0,ii] = d[0,ii] + D[0,ii-1]
+
+    for ii in range(1,N):
+        for jj in range(1,M):
+            D[ii,jj] = d[ii,jj] + np.min([g * D[ii - 1, jj], D[ii - 1, jj - 1], g * D[ii, jj - 1]]) 
+
+    dist = D[-1,-1]
+    ii,jj,kk = N - 1, M - 1, 1
+    w = []
+    w.append([ii, jj])
+    while (ii + jj) != 0:
+        if ii == 0:
+            jj -= 1
+        elif jj == 0:
+            ii -= 1 
+        else:
+            ind = np.argmin([D[ii - 1, jj], D[ii, jj - 1], D[ii - 1, jj - 1]])
+            if ind == 0:
+                ii -= 1
+            elif ind == 1:
+                jj -= 1
+            else:
+                ii -= 1
+                jj -= 1
+        kk += 1
+        w.append([ii, jj])
+
+    w = np.array(w)
+    
+    return D,dist,w 
+
+
+def norm(arr):
+    """ Demean and normalize a given input to unit std. """
+    arr -= np.nanmean(arr)
+    arr /= np.nanstd(arr)
+    return arr
+
 
 def clean_up(corr, sampling_rate, freqmin, freqmax):
     if corr.ndim == 2:
