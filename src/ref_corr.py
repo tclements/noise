@@ -7,7 +7,7 @@ from mpi4py import MPI
 from noise import clean_up, pws
 
 
-def main(corr_h5, REF,freqmin, freqmax, stack_method='pws'):
+def main(corr_h5, REF, stack_method='pws'):
     """
     Stack cross-correlations to make stable reference. 
     
@@ -20,8 +20,6 @@ def main(corr_h5, REF,freqmin, freqmax, stack_method='pws'):
                     as ASDF data set. Must end in .h5
     :type REF: str 
     :param REF: path/filename to reference correlation directory 
-    :type comps: str
-    :param comps: Two-letter component of cross-correlation, e.g. 'ZZ', 'TT'
 
     Last modified by thclements@g.harvard.edu 11/2/16
 
@@ -67,11 +65,10 @@ def main(corr_h5, REF,freqmin, freqmax, stack_method='pws'):
 
         # add reference correlation for all years   
         all_corr = np.vstack(all_corr)
-        filt = clean_up(all_corr,sampling_rate, freqmin, freqmax)
         if stack_method == 'pws':
-            ref = pws(filt,sampling_rate=sampling_rate,pws_timegate=0.1)
+            ref = pws(all_corr,sampling_rate=sampling_rate,pws_timegate=0.1)
         else:
-            ref = np.nanmean(filt,axis=0)
+            ref = np.nanmean(all_corr,axis=0)
         # create ref
         ref_str = '_'.join(['ref',net_sta,'ALL'])
         path = os.path.join(net_sta,comp,ref_str)
