@@ -237,9 +237,8 @@ def dtw(x,r, g=1.05):
 
 def norm(arr):
     """ Demean and normalize a given input to unit std. """
-    arr -= np.nanmean(arr)
-    arr /= np.nanstd(arr)
-    return arr
+    arr -= arr.mean(axis=1, keepdims=True)
+    return (arr.T / arr.std(axis=-1)).T
 
 
 def clean_up(corr, sampling_rate, freqmin, freqmax):
