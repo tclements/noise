@@ -237,8 +237,13 @@ def dtw(x,r, g=1.05):
 
 def norm(arr):
     """ Demean and normalize a given input to unit std. """
-    arr -= arr.mean(axis=1, keepdims=True)
-    return (arr.T / arr.std(axis=-1)).T
+    if arr.ndim == 1:
+        arr -= arr.mean()
+        arr /= arr.std()
+    else:
+        arr -= arr.mean(axis=-1, keepdims=True)
+        arr = (arr.T / arr.std(axis=-1)).T
+    return arr
 
 
 def clean_up(corr, sampling_rate, freqmin, freqmax):

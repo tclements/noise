@@ -336,7 +336,6 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bi
         Nfft = next_fast_len(int(FFTWhite.shape[axis]))
         white = np.real(scipy.fftpack.ifft(FFTWhite, Nfft,axis=axis)) / Nt
         Nt = FFTWhite.shape[axis]
-        white = np.concatenate((white[:,-(Nt // 2) + 1:], white[:,:(Nt // 2) + 1]),axis=axis)
         if time_norm == 'one_bit': 
             white = np.sign(white)
         elif time_norm == 'running_mean':
