@@ -414,8 +414,10 @@ def correlate(fft1,fft2, maxlag, Nfft=None, method='cross_correlation'):
         corr /= (noise.smooth(np.abs(fft1),half_win=5) ** 2 + 
                    0.01 * np.mean(noise.smooth(np.abs(fft1),half_win=5),axis=1)[:,np.newaxis])
     elif method == 'coherence':
-        corr /= noise.smooth(np.abs(fft1),half_win=5)
-        corr /= noise.smooth(np.abs(fft2),half_win=5)
+        corr /= (noise.smooth(np.abs(fft1),half_win=5)  + 
+                   0.01 * np.mean(noise.smooth(np.abs(fft1),half_win=5),axis=1)[:,np.newaxis])
+        corr /= (noise.smooth(np.abs(fft2),half_win=5)  + 
+                   0.01 * np.mean(noise.smooth(np.abs(fft2),half_win=5),axis=1)[:,np.newaxis])
 
     corr = np.real(scipy.fftpack.ifft(corr, Nfft,axis=axis)) 
     if axis == 1:
