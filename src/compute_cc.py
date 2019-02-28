@@ -282,7 +282,8 @@ def clean_up(corr,sampling_rate,freqmin,freqmax):
     corr = bandpass(corr,freqmin,freqmax,sampling_rate,zerophase=True)
     return corr
 
-def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bit'):
+def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bit',
+               to_whiten = True):
     """
 
     Pre-process for cross-correlation. 
@@ -330,7 +331,7 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bi
     elif data.ndim == 2:
         axis = 1
 
-    FFTWhite = whiten(data,trace.stats.delta,freqmin,freqmax)
+    FFTWhite = whiten(data,trace.stats.delta,freqmin,freqmax, to_whiten=to_whiten)
 
     if normalize:
         Nfft = next_fast_len(int(FFTWhite.shape[axis]))
@@ -436,7 +437,7 @@ def correlate(fft1,fft2, maxlag, Nfft=None, method='cross_correlation'):
     return corr
 
 
-def whiten(data, delta, freqmin, freqmax,Nfft=None):
+def whiten(data, delta, freqmin, freqmax, to_whiten = True, Nfft=None):
     """This function takes 1-dimensional *data* timeseries array,
     goes to frequency domain using fft, whitens the amplitude of the spectrum
     in frequency domain between *freqmin* and *freqmax*
@@ -466,54 +467,56 @@ def whiten(data, delta, freqmin, freqmax,Nfft=None):
     if Nfft is None:
         Nfft = next_fast_len(int(data.shape[axis]))
 
-    Napod = 100
+    pad = 100
     Nfft = int(Nfft)
     freqVec = scipy.fftpack.fftfreq(Nfft, d=delta)[:Nfft // 2]
 
     J = np.where((freqVec >= freqmin) & (freqVec <= freqmax))[0]
-    low = J[0] - Napod
+    low = J[0] - pad
     if low <= 0:
         low = 1
 
     left = J[0]
     right = J[-1]
-    high = J[-1] + Napod
+    high = J[-1] + pad
     if high > Nfft / 2:
         high = int(Nfft // 2)
 
     FFTRawSign = scipy.fftpack.fft(data, Nfft,axis=axis)
 
-    # Left tapering:
-    if axis == 1:
-        FFTRawSign[:,0:low] *= 0
-        FFTRawSign[:,low:left] = np.cos(
-            np.linspace(np.pi / 2., np.pi, left - low)) ** 2 * np.exp(
-            1j * np.angle(FFTRawSign[:,low:left]))
-        # Pass band:
-        FFTRawSign[:,left:right] = np.exp(1j * np.angle(FFTRawSign[:,left:right]))
-        # Right tapering:
-        FFTRawSign[:,right:high] = np.cos(
-            np.linspace(0., np.pi / 2., high - right)) ** 2 * np.exp(
-            1j * np.angle(FFTRawSign[:,right:high]))
-        FFTRawSign[:,high:Nfft + 1] *= 0
+    if to_whiten:
 
-        # Hermitian symmetry (because the input is real)
-        FFTRawSign[:,-(Nfft // 2) + 1:] = FFTRawSign[:,1:(Nfft // 2)].conjugate()[::-1]
-    else:
-        FFTRawSign[0:low] *= 0
-        FFTRawSign[low:left] = np.cos(
-            np.linspace(np.pi / 2., np.pi, left - low)) ** 2 * np.exp(
-            1j * np.angle(FFTRawSign[low:left]))
-        # Pass band:
-        FFTRawSign[left:right] = np.exp(1j * np.angle(FFTRawSign[left:right]))
-        # Right tapering:
-        FFTRawSign[right:high] = np.cos(
-            np.linspace(0., np.pi / 2., high - right)) ** 2 * np.exp(
-            1j * np.angle(FFTRawSign[right:high]))
-        FFTRawSign[high:Nfft + 1] *= 0
+        # Left tapering:
+        if axis == 1:
+            FFTRawSign[:,0:low] *= 0
+            FFTRawSign[:,low:left] = np.cos(
+                np.linspace(np.pi / 2., np.pi, left - low)) ** 2 * np.exp(
+                1j * np.angle(FFTRawSign[:,low:left]))
+            # Pass band:
+            FFTRawSign[:,left:right] = np.exp(1j * np.angle(FFTRawSign[:,left:right]))
+            # Right tapering:
+            FFTRawSign[:,right:high] = np.cos(
+                np.linspace(0., np.pi / 2., high - right)) ** 2 * np.exp(
+                1j * np.angle(FFTRawSign[:,right:high]))
+            FFTRawSign[:,high:Nfft + 1] *= 0
 
-        # Hermitian symmetry (because the input is real)
-        FFTRawSign[-(Nfft // 2) + 1:] = FFTRawSign[1:(Nfft // 2)].conjugate()[::-1]
+            # Hermitian symmetry (because the input is real)
+            FFTRawSign[:,-(Nfft // 2) + 1:] = FFTRawSign[:,1:(Nfft // 2)].conjugate()[::-1]
+        else:
+            FFTRawSign[0:low] *= 0
+            FFTRawSign[low:left] = np.cos(
+                np.linspace(np.pi / 2., np.pi, left - low)) ** 2 * np.exp(
+                1j * np.angle(FFTRawSign[low:left]))
+            # Pass band:
+            FFTRawSign[left:right] = np.exp(1j * np.angle(FFTRawSign[left:right]))
+            # Right tapering:
+            FFTRawSign[right:high] = np.cos(
+                np.linspace(0., np.pi / 2., high - right)) ** 2 * np.exp(
+                1j * np.angle(FFTRawSign[right:high]))
+            FFTRawSign[high:Nfft + 1] *= 0
+
+            # Hermitian symmetry (because the input is real)
+            FFTRawSign[-(Nfft // 2) + 1:] = FFTRawSign[1:(Nfft // 2)].conjugate()[::-1]
 
     return FFTRawSign
 

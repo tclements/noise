@@ -288,7 +288,7 @@ def stretch_mat_creation(refcc, str_range=0.01, nstr=1001):
     tiled_ref = np.tile(refcc,(nstr,1))
     coord = np.vstack([(np.ones(tiled_ref.shape) * np.arange(tiled_ref.shape[0])[:,None]).flatten(),str_timemat.flatten()])
     strrefmat = map_coordinates(tiled_ref, coord)
-    strrefmat = strrefmat.reshape(tiled_ref.shape)
+    strrefmat = np.flipud(strrefmat.reshape(tiled_ref.shape))
     return strrefmat, strvec
 
 
