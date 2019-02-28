@@ -24,7 +24,8 @@ Saves cross-correlation into an HDF5 file.
 """
 
 def main(source,receiver,maxlag,downsamp_freq,
-         freqmin,freqmax,XML,step=1800,cc_len=3600, method='cross_correlation',time_norm='running_mean'):
+         freqmin,freqmax,XML,step=1800,cc_len=3600, method='cross_correlation',time_norm='running_mean',
+         to_whiten=True):
 
     """
     Cross-correlates noise data from obspy stream.
