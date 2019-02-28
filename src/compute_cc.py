@@ -283,7 +283,7 @@ def clean_up(corr,sampling_rate,freqmin,freqmax):
     return corr
 
 def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bit',
-               to_whiten = True):
+               to_whiten=True):
     """
 
     Pre-process for cross-correlation. 
@@ -437,7 +437,7 @@ def correlate(fft1,fft2, maxlag, Nfft=None, method='cross_correlation'):
     return corr
 
 
-def whiten(data, delta, freqmin, freqmax, to_whiten = True, Nfft=None):
+def whiten(data, delta, freqmin, freqmax, to_whiten=True, Nfft=None):
     """This function takes 1-dimensional *data* timeseries array,
     goes to frequency domain using fft, whitens the amplitude of the spectrum
     in frequency domain between *freqmin* and *freqmax*
