@@ -80,8 +80,13 @@ def main(source,receiver,maxlag,downsamp_freq,
     receiver = receiver.trim(t1, t2, pad=True, fill_value=0.)
 
     t_len = np.arange(0, t2 - t1 - cc_len + step, step)
-    t_start = [t1 + t for t in t_len]
-    t_end = [t1 + t + cc_len for t in t_len]
+    t_start = np.array([t1 + t for t in t_len])
+    t_end = np.array([t1 + t + cc_len for t in t_len])
+
+    # check no data at end of overlapping windows
+    t_ind = len(np.where(t_end <= t2)[0])
+    t_start = t_start[t_ind]
+    t_end = t_end[t_ind]
 
     # get station inventory
     if XML is not None:
@@ -332,18 +337,24 @@ def process_cc(stream,freqmin,freqmax,percent=0.05,max_len=20.,time_norm='one_bi
     elif data.ndim == 2:
         axis = 1
 
+    if normalize:
+        if time_norm == 'one_bit': 
+            data = np.sign(data)
+        elif time_norm == 'running_mean':
+            data = noise.running_abs_mean(data,int(1 / freqmin / 2))
+
     FFTWhite = whiten(data,trace.stats.delta,freqmin,freqmax, to_whiten=to_whiten)
 
-    if normalize:
-        Nfft = next_fast_len(int(FFTWhite.shape[axis]))
-        white = np.real(scipy.fftpack.ifft(FFTWhite, Nfft,axis=axis)) / Nt
-        Nt = FFTWhite.shape[axis]
-        if time_norm == 'one_bit': 
-            white = np.sign(white)
-        elif time_norm == 'running_mean':
-            white = noise.running_abs_mean(white,int(1 / freqmin / 2))
-        FFTWhite = scipy.fftpack.fft(white, Nfft,axis=axis)
-        FFTWhite[:,-(Nfft // 2) + 1:] = FFTWhite[:,1:(Nfft // 2)].conjugate()[::-1]
+    # if normalize:
+    #     Nfft = next_fast_len(int(FFTWhite.shape[axis]))
+    #     white = np.real(scipy.fftpack.ifft(FFTWhite, Nfft,axis=axis)) / Nt
+    #     Nt = FFTWhite.shape[axis]
+    #     if time_norm == 'one_bit': 
+    #         white = np.sign(white)
+    #     elif time_norm == 'running_mean':
+    #         white = noise.running_abs_mean(white,int(1 / freqmin / 2))
+    #     FFTWhite = scipy.fftpack.fft(white, Nfft,axis=axis)
+    #     FFTWhite[:,-(Nfft // 2) + 1:] = FFTWhite[:,1:(Nfft // 2)].conjugate()[::-1]
 
     return FFTWhite,np.vstack([trace_mad,trace_std,nonzero]).T
 
@@ -411,14 +422,14 @@ def correlate(fft1,fft2, maxlag, Nfft=None, method='cross_correlation'):
 
     Nt = fft1.shape[axis]
 
-    corr = np.conj(fft1) * fft2
+    corr = fft1 * np.conj(fft2)
     if method == 'deconv':
-        corr /= (noise.smooth(np.abs(fft1),half_win=5) ** 2 + 
+        corr /= (noise.smooth(np.abs(fft2),half_win=10) ** 2 + 
                    0.01 * np.mean(noise.smooth(np.abs(fft1),half_win=5),axis=1)[:,np.newaxis])
     elif method == 'coherence':
-        corr /= (noise.smooth(np.abs(fft1),half_win=5)  + 
+        corr /= (noise.smooth(np.abs(fft1),half_win=10)  + 
                    0.01 * np.mean(noise.smooth(np.abs(fft1),half_win=5),axis=1)[:,np.newaxis])
-        corr /= (noise.smooth(np.abs(fft2),half_win=5)  + 
+        corr /= (noise.smooth(np.abs(fft2),half_win=10)  + 
                    0.01 * np.mean(noise.smooth(np.abs(fft2),half_win=5),axis=1)[:,np.newaxis])
 
     corr = np.real(scipy.fftpack.ifft(corr, Nfft,axis=axis)) 
