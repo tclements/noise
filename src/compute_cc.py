@@ -424,13 +424,13 @@ def correlate(fft1,fft2, maxlag, Nfft=None, method='cross_correlation'):
 
     corr = fft1 * np.conj(fft2)
     if method == 'deconv':
-        corr /= (noise.smooth(np.abs(fft2),half_win=10) ** 2 + 
-                   0.01 * np.mean(noise.smooth(np.abs(fft1),half_win=5),axis=1)[:,np.newaxis])
+        corr /= (noise.smooth(np.abs(fft2),half_win=20) ** 2 + 
+                   0.01 * np.mean(noise.smooth(np.abs(fft1),half_win=20),axis=1)[:,np.newaxis])
     elif method == 'coherence':
-        corr /= (noise.smooth(np.abs(fft1),half_win=10)  + 
-                   0.01 * np.mean(noise.smooth(np.abs(fft1),half_win=5),axis=1)[:,np.newaxis])
-        corr /= (noise.smooth(np.abs(fft2),half_win=10)  + 
-                   0.01 * np.mean(noise.smooth(np.abs(fft2),half_win=5),axis=1)[:,np.newaxis])
+        corr /= (noise.smooth(np.abs(fft1),half_win=20)  + 
+                   0.01 * np.mean(noise.smooth(np.abs(fft1),half_win=20),axis=1)[:,np.newaxis])
+        corr /= (noise.smooth(np.abs(fft2),half_win=20)  + 
+                   0.01 * np.mean(noise.smooth(np.abs(fft2),half_win=20),axis=1)[:,np.newaxis])
 
     corr = np.real(scipy.fftpack.ifft(corr, Nfft,axis=axis)) 
     if axis == 1:
