@@ -84,7 +84,7 @@ def main(source,receiver,maxlag,downsamp_freq,
     t_end = np.array([t1 + t + cc_len for t in t_len])
 
     # check no data at end of overlapping windows
-    t_ind = len(np.where(t_end <= t2)[0])
+    t_ind = np.where(t_end <= t2)[0]
     t_start = t_start[t_ind]
     t_end = t_end[t_ind]
 
